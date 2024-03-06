@@ -1,41 +1,28 @@
+import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
-import yfinance as yf   
+from requests import get
+url_api_bovespa = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4334/dados?formato=json"
+def carregar_siglas():
+    """
+    Função para carregar as siglas da bolsa da Ibovespa
 
-st.title('Meu primeiro programa de web')
-st.text('Nome')
-nome = st.text_input('Digite seu nome')
-st.write('Olá', nome)
-
-
-def inverte_texto(texto):
-    return texto[::-1]
-
-
-# Botão para inverter o texto
-b1 = st.button("Inverter")
-# st.write(b1)
-if b1:
-    texto_invertido = inverte_texto(nome)
-    st.write(f"Texto Invertido: {texto_invertido}")
-
-b2 = st.button("Gráfico")
-if b2:
-    fig, ax = plt.subplots()
-    ax.scatter([1, 2, 3], [1, 2, 3])
-    st.pyplot(fig)
-
-# pegar ticker de uma ação da ibovespa e baixar os dados e plotar o gráfico
+    Retorna:
+        DataFrame com as siglas e os nomes das empresas
+    """
     
-ticker = st.text_input('Digite o ticker da ação')
-data_inicio = str(st.date_input('Data Início'))
-data_fim = str(st.date_input('Data Fim'))
-st.write(data_inicio)
-b3 = st.button('Buscar')
-if b3:
-    # loading
-    st.write('Carregando...')
-    acao = yf.download(ticker + '.SA', start=data_inicio, end=data_fim)
-    st.line_chart(acao['Close'])
-    st.write(acao)
-    st.write(acao.describe())
+    resposta = get(url_api_bovespa)
+    dados = resposta.json()
+    
+    df_siglas = pd.DataFrame(dados["series"][0]["dados"])
+    df_siglas.columns = ["data", "sigla", "valor"]
+    
+    return df_siglas[["sigla", "valor"]]
+
+df_siglas = carregar_siglas()
+
+st.title("Ibovespa - Selecione a Sigla")
+
+sigla_selecionada = st.checkbox("Mostrar valor", value=False)
+
+if sigla_selecionada:
+    st.write(df_siglas.to_html())
